@@ -139,9 +139,7 @@ public class Client {
 			}
 			catch(Exception e) {
 				System.out.println("Invalid port number.");
-				System.out.println("Usage is: > java Client [username] [portNumber]
-
-						[serverAddress]");
+				System.out.println("Usage is: > java Client [username] [portNumber] [serverAddress]");
 
 								return;
 			}
@@ -153,9 +151,7 @@ public class Client {
 			break;
 			//if number of arguments are invalid
 		default:
-			System.out.println("Usage is: > java Client [username] [portNumber]
-
-					[serverAddress]");
+			System.out.println("Usage is: > java Client [username] [portNumber] [serverAddress]");
 
 							return;
 		}
@@ -167,9 +163,7 @@ public class Client {
 		System.out.println("\nHello.! Welcome to the chatroom.");
 		System.out.println("Instructions:");
 		System.out.println("1. Simply type the message to send broadcast to all active clients");
-		System.out.println("2. Type '@username<space>yourmessage' without quotes to send message to
-
-				desired client");
+		System.out.println("2. Type '@username<space>yourmessage' without quotes to send message to desired client");
 
 				System.out.println("3. Type 'WHOISIN' without quotes to see list of active clients");
 				System.out.println("4. Type 'LOGOUT' without quotes to logoff from server");
