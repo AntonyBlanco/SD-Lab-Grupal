@@ -115,9 +115,7 @@ public class Server {
 					// try to write to the Client if it fails remove it from the list
 					if(!ct1.writeMsg(messageLf)) {
 						al.remove(y);
-						display("Disconnected Client " + ct1.username + " removed from
-
-								list.");
+						display("Disconnected Client " + ct1.username + " removed from list.");
 
 					}
 					// username found and delivered the message
