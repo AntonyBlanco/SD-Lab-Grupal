@@ -1,222 +1,348 @@
 package LabSD3;
 
-import java.net.*;
 import java.io.*;
+import java.net.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
-
-//El Cliente que puede ejecutarse como consola
-public class Client  {
-	
-	// Notificación
+// El servidor que se puede ejecutar como consola
+public class Server {
+	// Un ID único para cada conexión
+	private static int uniqueId;
+	// un ArrayList para mantener la lista de Clientes
+	private ArrayList<ClientThread> al;
+	// para mostrar la hora
+	private SimpleDateFormat sdf;
+	// el número de puerto para escuchar conexiones
+	private int port;
+	// para verificar si el servidor está en funcionamiento
+	private boolean keepGoing;
+	// notificación
 	private String notif = " *** ";
-	// para E/S
-	private ObjectInputStream sInput;		// para leer del socket
-	private ObjectOutputStream sOutput;		// para escribir en el socket
-	private Socket socket;					// objeto de socket
-	private String server, username;	// servidor y nombre de usuario
-	private int port;					//puerto
-
-	public String getUsername() {
-		return username;
-	}
-
-	public void setUsername(String username) {
-		this.username = username;
-	}
-
-	/*
-	 *  Constructor para establecer las siguientes cosas
-	 *  servidor: la dirección del servidor
-	 *  puerto: el número de puerto
-	 *  username: el nombre de usuario
-	 */
-	Client(String server, int port, String username) {
-		this.server = server;
+	
+	// Constructor que recibe el puerto para escuchar conexiones como parámetro
+	
+	public Server(int port) {
+		// el puerto
 		this.port = port;
-		this.username = username;
+		// para mostrar hh:mm:ss
+		sdf = new SimpleDateFormat("HH:mm:ss");
+		// un ArrayList para mantener la lista de Clientes
+		al = new ArrayList<ClientThread>();
 	}
 	
+	public void start() {
+		keepGoing = true;
+		// crear socket servidor y esperar solicitudes de conexión 
+		try 
+		{
+			// el socket utilizado por el servidor
+			ServerSocket serverSocket = new ServerSocket(port);
 
-	//Para iniciar el chat
+			// bucle infinito para esperar conexiones (hasta que el servidor esté activo)
+			while(keepGoing) 
+			{
+				display("Server waiting for Clients on port " + port + ".");
+				
+				// aceptar conexión si es solicitada por el cliente
+				Socket socket = serverSocket.accept();
+				// romper si el servidor se detiene
+				if(!keepGoing)
+					break;
+				// si el cliente está conectado, crear su hilo
+				ClientThread t = new ClientThread(socket);
+				// agregar este cliente a la lista
+				al.add(t);
+				
+				t.start();
+			}
+			// intentar detener el servidor
+			try {
+				serverSocket.close();
+				for(int i = 0; i < al.size(); ++i) {
+					ClientThread tc = al.get(i);
+					try {
+					// cerrar todos los flujos de datos y el socket
+					tc.sInput.close();
+					tc.sOutput.close();
+					tc.socket.close();
+					}
+					catch(IOException ioE) {
+					}
+				}
+			}
+			catch(Exception e) {
+				display("Exception closing the server and clients: " + e);
+			}
+		}
+		catch (IOException e) {
+            String msg = sdf.format(new Date()) + " Exception on new ServerSocket: " + e + "\n";
+			display(msg);
+		}
+	}
 	
-	public boolean start() {
-		// intentar conectarse al servidor
+	// para detener el servidor
+	protected void stop() {
+		keepGoing = false;
 		try {
-			socket = new Socket(server, port);
-		} 
-		// Manejador de excepciones si falla
-		catch(Exception ec) {
-			display("Error connecting to server:" + ec);
-			return false;
+			new Socket("localhost", port);
 		}
-		String msg = "Connection accepted " + socket.getInetAddress() + ":" + socket.getPort();
-		display(msg);
-	
-		/* Creando ambos flujos de datos */
-		try
-		{
-			sInput  = new ObjectInputStream(socket.getInputStream());
-			sOutput = new ObjectOutputStream(socket.getOutputStream());
+		catch(Exception e) {
 		}
-		catch (IOException eIO) {
-			display("Exception creating new Input/output Streams: " + eIO);
-			return false;
-		}
-
-		// Crea el Hilo para escuchar desde el servidor
-		new ListenFromServer().start();
-		// Envía nuestro nombre de usuario al servidor este es el único mensaje que enviaremos como String. Todos los demás mensajes serán objetos ChatMessage
-		try
-		{
-			sOutput.writeObject(username);
-		}
-		catch (IOException eIO) {
-			display("Exception doing login : " + eIO);
-			disconnect();
-			return false;
-		}
-		// éxito, informamos al llamador que funcionó
-		return true;
 	}
-	 //Para enviar un mensaje a la consola
+	
+	// Mostrar un evento en la consola
 	private void display(String msg) {
-		System.out.println(msg);
+		String time = sdf.format(new Date()) + " " + msg;
+		System.out.println(time);
 	}
 	
-	//Para enviar un mensaje al servidor
-
-	void sendMessage(ChatMessage msg) {
-		try {
-			sOutput.writeObject(msg);
-		}
-		catch(IOException e) {
-			display("Exception writing to server: " + e);
-		}
-	}
-
-	//Cuando algo sale mal
-	//Cierra los flujos de entrada/salida y desconecta
-
-	private void disconnect() {
-		try { 
-			if(sInput != null) sInput.close();
-		}
-		catch(Exception e) {}
-		try {
-			if(sOutput != null) sOutput.close();
-		}
-		catch(Exception e) {}
-        try{
-			if(socket != null) socket.close();
-		}
-		catch(Exception e) {}
-			
-	}
-	/*
-	 * Para iniciar el Cliente en modo consola use uno de los siguientes comandos
-	 * > java Cliente
-	 * > java Cliente username
-	 * > java Cliente username númeroDePuerto
-	 * > java Cliente username númeroDePuerto direcciónDelServidor en el símbolo del sistema
-	 * Si el númeroDePuerto no está especificado, se usa 1500
-	 * Si la direcciónDelServidor no está especificada, se usa "localHost"
-	 * Si el nombre de usuario no está especificado, se usa "Anónimo"
-	 */
-	public static void main(String[] args) {
-		// valores predeterminados si no se ingresan
-		int numeroDePuerto = 1500;
-		String direccionDelServidor = "localhost";
-		String nombreDeUsuario = "Anónimo";
-		Scanner scan = new Scanner(System.in);
+	// para transmitir un mensaje a todos los Clientes
+	private synchronized boolean broadcast(String message) {
+		// agregar marca de tiempo al mensaje
+		String time = sdf.format(new Date());
 		
-		System.out.println("Ingrese el nombre de usuario: ");
-		nombreDeUsuario = scan.nextLine();
+		// para verificar si el mensaje es privado, es decir, mensaje de cliente a cliente
+		String[] w = message.split(" ",3);
+		
+		boolean isPrivate = false;
+		if(w[1].charAt(0)=='@') 
+			isPrivate=true;
+		
+		
+		// si es un mensaje privado, enviar el mensaje solo al nombre de usuario mencionado
+		if(isPrivate==true)
+		{
+			String tocheck=w[1].substring(1, w[1].length());
+			
+			message=w[0]+w[2];
+			String messageLf = time + " " + message + "\n";
+			boolean found=false;
+			// recorremos en orden inverso para encontrar el nombre de usuario mencionado
+			for(int y=al.size(); --y>=0;)
+			{
+				ClientThread ct1=al.get(y);
+				String check=ct1.getUsername();
+				if(check.equals(tocheck))
+				{
+					// intentar escribir en el Cliente, si falla, eliminarlo de la lista
+					if(!ct1.writeMsg(messageLf)) {
+						al.remove(y);
+						display("Disconnected Client " + ct1.username + " removed from list.");
+					}
+					// nombre de usuario encontrado y mensaje entregado
+					found=true;
+					break;
+				}
+				
+				
+				
+			}
+			// usuario mencionado no encontrado, devolver false
+			if(found!=true)
+			{
+				return false; 
+			}
+		}
+		// si el mensaje es un mensaje de difusión
+		else
+		{
+			String messageLf = time + " " + message + "\n";
+			// mostrar mensaje
+			System.out.print(messageLf);
+			
+			// recorremos en orden inverso en caso de que tengamos que eliminar un Cliente
+			// porque se ha desconectado
+			for(int i = al.size(); --i >= 0;) {
+				ClientThread ct = al.get(i);
+				// intentar escribir en el Cliente, si falla, eliminarlo de la lista
+				if(!ct.writeMsg(messageLf)) {
+					al.remove(i);
+					display("Disconnected Client " + ct.username + " removed from list.");
+				}
+			}
+		}
+		return true;
+		
+		
+	}
 
-		//Diferentes casos según la longitud de los argumentos.
+	// si el cliente envió un mensaje de LOGOUT para salir
+	synchronized void remove(int id) {
+		
+		String disconnectedClient = "";
+		// escaneamos la lista de arrays hasta que encontramos el ID
+		for(int i = 0; i < al.size(); ++i) {
+			ClientThread ct = al.get(i);
+			// si se encuentra, eliminarlo
+			if(ct.id == id) {
+				disconnectedClient = ct.getUsername();
+				al.remove(i);
+				break;
+			}
+		}
+		broadcast(notif + disconnectedClient + " has left the chat room." + notif);
+	}
+	
+	/*
+	 *  Para ejecutar como una aplicación de consola
+	 * > java Server
+	 * > java Server portNumber
+	 * Si el número de puerto no se especifica, se usa 1500
+	 */ 
+	public static void main(String[] args) {
+		// iniciar el servidor en el puerto 1500 a menos que se especifique un número de puerto
+		int portNumber = 1500;
 		switch(args.length) {
-			case 3:
-				// para > javac Cliente nombreDeUsuario númeroDePuerto direcciónDelServidor
-				direccionDelServidor = args[2];
-			case 2:
-				// para > javac Cliente nombreDeUsuario númeroDePuerto
+			case 1:
 				try {
-					numeroDePuerto = Integer.parseInt(args[1]);
+					portNumber = Integer.parseInt(args[0]);
 				}
 				catch(Exception e) {
 					System.out.println("Número de puerto inválido.");
-					System.out.println("El uso es: > java Cliente [nombreDeUsuario] [númeroDePuerto] [direcciónDelServidor]");
+					System.out.println("El uso es: > java Server [portNumber]");
 					return;
 				}
-			case 1: 
-				// para > javac Cliente nombreDeUsuario
-				nombreDeUsuario = args[0];
 			case 0:
-				// para > java Cliente
 				break;
-			// si el número de argumentos es inválido
 			default:
-				System.out.println("El uso es: > java Cliente [nombreDeUsuario] [númeroDePuerto] [direcciónDelServidor]");
-			return;
+				System.out.println("El uso es: > java Server [portNumber]");
+				return;
+				
 		}
-		// crear el objeto Cliente
-		Client cliente = new Client(direccionDelServidor, numeroDePuerto, nombreDeUsuario);
-		// intentar conectarse al servidor y regresar si no está conectado
-		if(!cliente.start())
-			return;
-		
-		System.out.println("\n¡Hola.! Bienvenido al chatroom.");
-		System.out.println("Instrucciones:");
-		System.out.println("1. Simplemente escriba el mensaje para enviarlo a todos los clientes activos");
-		System.out.println("2. Escriba '@nombreDeUsuario<espacio>suMensaje' sin comillas para enviar un mensaje al cliente deseado");
-		System.out.println("3. Escriba 'WHOISIN' sin comillas para ver la lista de clientes activos");
-		System.out.println("4. Escriba 'LOGOUT' sin comillas para cerrar la sesión del servidor");
-		
-		// bucle infinito para obtener la entrada del usuario
-		while(true) {
-			System.out.print("> ");
-			// leer mensaje del usuario
-			String msg = scan.nextLine();
-			// cerrar la sesión si el mensaje es LOGOUT
-			if(msg.equalsIgnoreCase("LOGOUT")) {
-				cliente.sendMessage(new ChatMessage(ChatMessage.LOGOUT, ""));
-				break;
-			}
-			// mensaje para verificar quiénes están presentes en la sala de chat
-			else if(msg.equalsIgnoreCase("WHOISIN")) {
-				cliente.sendMessage(new ChatMessage(ChatMessage.WHOISIN, ""));				
-			}
-			// mensaje de texto regular
-			else {
-				cliente.sendMessage(new ChatMessage(ChatMessage.MESSAGE, msg));
-			}
-		}
-		// cerrar recurso
-		scan.close();
-		// cliente completó su trabajo. desconectar cliente.
-		cliente.disconnect();	
+		// crear un objeto de servidor y iniciarlo
+		Server server = new Server(portNumber);
+		server.start();
 	}
 
-	//Una clase que espera el mensaje del servidor
+	// Una instancia de este hilo se ejecutará para cada cliente
+	class ClientThread extends Thread {
+		// el socket para recibir mensajes del cliente
+		Socket socket;
+		ObjectInputStream sInput;
+		ObjectOutputStream sOutput;
+		// mi ID único (más fácil para desconexión)
+		int id;
+		// el nombre de usuario del Cliente
+		String username;
+		// objeto de mensaje para recibir mensaje y su tipo
+		ChatMessage cm;
+		// marca de tiempo
+		String date;
 
-	class ListenFromServer extends Thread {
+		// Constructor
+		ClientThread(Socket socket) {
+			// un ID único
+			id = ++uniqueId;
+			this.socket = socket;
+			// Crear ambos flujos de datos
+			System.out.println("Thread trying to create Object Input/Output Streams");
+			try
+			{
+				sOutput = new ObjectOutputStream(socket.getOutputStream());
+				sInput  = new ObjectInputStream(socket.getInputStream());
+				// leer el nombre de usuario
+				username = (String) sInput.readObject();
+				broadcast(notif + username + " has joined the chat room." + notif);
+			}
+			catch (IOException e) {
+				display("Exception creating new Input/output Streams: " + e);
+				return;
+			}
+			catch (ClassNotFoundException e) {
+			}
+            date = new Date().toString() + "\n";
+		}
+		
+		public String getUsername() {
+			return username;
+		}
 
+		public void setUsername(String username) {
+			this.username = username;
+		}
+
+		// bucle infinito para leer y reenviar mensaje
 		public void run() {
-			while(true) {
+			// para hacer un bucle hasta LOGOUT
+			boolean keepGoing = true;
+			while(keepGoing) {
+				// leer un String (que es un objeto)
 				try {
-					// leer el mensaje del flujo de datos de entrada
-					String msg = (String) sInput.readObject();
-					// imprimir el mensaje
-					System.out.println(msg);
-					System.out.print("> ");
+					cm = (ChatMessage) sInput.readObject();
 				}
-				catch(IOException e) {
-					display(notif + "El servidor ha cerrado la conexión: " + e + notif);
-					break;
+				catch (IOException e) {
+					display(username + " Exception reading Streams: " + e);
+					break;				
 				}
 				catch(ClassNotFoundException e2) {
+					break;
+				}
+				// obtener el mensaje del objeto ChatMessage recibido
+				String message = cm.getMessage();
+
+				// diferentes acciones basadas en el tipo de mensaje
+				switch(cm.getType()) {
+
+				case ChatMessage.MESSAGE:
+					boolean confirmation =  broadcast(username + ": " + message);
+					if(confirmation==false){
+						String msg = notif + "Lo siento. No existe ese usuario." + notif;
+						writeMsg(msg);
+					}
+					break;
+				case ChatMessage.LOGOUT:
+					display(username + " disconnected with a LOGOUT message.");
+					keepGoing = false;
+					break;
+				case ChatMessage.WHOISIN:
+					writeMsg("Lista de usuarios conectados en " + sdf.format(new Date()) + "\n");
+					// enviar lista de clientes activos
+					for(int i = 0; i < al.size(); ++i) {
+						ClientThread ct = al.get(i);
+						writeMsg((i+1) + ") " + ct.username + " desde " + ct.date);
+					}
+					break;
 				}
 			}
+			// si sale del bucle, se desconecta y se elimina de la lista de clientes
+			remove(id);
+			close();
+		}
+		
+		// cerrar todo
+		private void close() {
+			try {
+				if(sOutput != null) sOutput.close();
+			}
+			catch(Exception e) {}
+			try {
+				if(sInput != null) sInput.close();
+			}
+			catch(Exception e) {};
+			try {
+				if(socket != null) socket.close();
+			}
+			catch (Exception e) {}
+		}
+
+		// escribir un String en el flujo de salida del Cliente
+		private boolean writeMsg(String msg) {
+			// si el Cliente aún está conectado, enviar el mensaje a él
+			if(!socket.isConnected()) {
+				close();
+				return false;
+			}
+			// escribir el mensaje en el flujo
+			try {
+				sOutput.writeObject(msg);
+			}
+			// si ocurre un error, no abortar solo informar al usuario
+			catch(IOException e) {
+				display(notif + "Error enviando mensaje a " + username + notif);
+				display(e.toString());
+			}
+			return true;
 		}
 	}
 }
