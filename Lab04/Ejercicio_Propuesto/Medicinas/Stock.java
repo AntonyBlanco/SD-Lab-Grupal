@@ -21,5 +21,24 @@ public class Stock extends UnicastRemoteObject implements StockInterface {
         medicines.put(name, new Medicine(name, price, stock));
     }
     
-
+    // Método para comprar una medicina del inventario
+    @Override
+    public MedicineInterface buyMedicine(String name, int amount) throws Exception {
+        MedicineInterface aux = medicines.get(name); // Obtiene la medicina del inventario
+        
+        // Verifica si la medicina no está disponible en el inventario
+        if (aux == null) {
+            throw new Exception("Imposible encontrar " + name);
+        }
+        
+        // Realiza la compra de la medicina especificada y la devuelve
+        MedicineInterface element = aux.getMedicine(amount);
+        return element;
+    }
+    
+    // Método para obtener la lista de productos en el inventario
+    @Override
+    public HashMap<String, MedicineInterface> getStockProducts() throws Exception {
+        return this.medicines;
+    }
 }
