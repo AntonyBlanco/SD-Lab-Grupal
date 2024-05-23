@@ -1,22 +1,28 @@
 package Resuelto;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 
-public class CalculatorImpl extends java.rmi.server.UnicastRemoteObject implements Calculator {
-    // Implementations must have an explicit constructor
-    // in order to declare the RemoteException exception
-    public CalculatorImpl()
-    throws java.rmi.RemoteException {
+// Implementación de la interfaz remota, extiende UnicastRemoteObject
+public class CalculatorImpl extends UnicastRemoteObject implements Calculator {
+    // Constructor explícito que lanza RemoteException
+    public CalculatorImpl() throws RemoteException {
         super();
     }
-    public int add(int a, int b) throws java.rmi.RemoteException {
+
+    // Implementación de los métodos remotos
+    public int add(int a, int b) throws RemoteException {
         return a + b;
     }
-    public int sub(int a, int b) throws java.rmi.RemoteException {
+
+    public int sub(int a, int b) throws RemoteException {
         return a - b;
     }
-    public int mul(int a, int b) throws java.rmi.RemoteException {
-    return a * b;
+
+    public int mul(int a, int b) throws RemoteException {
+        return a * b;
     }
-    public int div(int a, int b) throws java.rmi.RemoteException {
-    return a / b;
+
+    public int div(int a, int b) throws RemoteException {
+        return a / b;
     }
 }
