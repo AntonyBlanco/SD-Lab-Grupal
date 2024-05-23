@@ -26,5 +26,25 @@ public class ClienteSide {
                 System.out.println("*--------------*");
             }
         }
+        // Si la opción seleccionada es 2, comprar un producto
+        else if (selection == 2) {
+            System.out.println("Ingrese nombre de la medicina"); // Solicita al usuario que ingrese el nombre de la medicina
+            String medicine = sc.next(); // Lee el nombre de la medicina ingresada por el usuario
+            System.out.println("Ingrese cantidad a comprar"); // Solicita al usuario que ingrese la cantidad de medicina a comprar
+            int amount = sc.nextInt(); // Lee la cantidad de medicina ingresada por el usuario
 
+            // Realiza la compra de la medicina especificada por el usuario
+            MedicineInterface aux = pharm.buyMedicine(medicine, amount);
+
+            // Muestra un mensaje de confirmación y los detalles de la medicina comprada
+            System.out.println("Usted acaba de comprar");
+            System.out.println(aux.print());
+        }
+        // Si la opción seleccionada no es válida, muestra un mensaje de error
+        else {
+            System.out.println("Seleccione una opcion valida");
+        }
+
+        sc.close(); // Cierra el Scanner para liberar recursos
+    }
 }
