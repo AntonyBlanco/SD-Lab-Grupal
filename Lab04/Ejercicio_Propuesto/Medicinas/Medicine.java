@@ -27,5 +27,29 @@ public class Medicine extends UnicastRemoteObject implements MedicineInterface {
         this.stock = stock;
     }
     
-
+    // Método para comprar una cantidad específica de medicina
+    @Override
+    public Medicine getMedicine(int amount) throws Exception {
+        // Verifica si el stock de la medicina es suficiente para la compra
+        if (this.stock <= 0)
+            throw new StockException("Stock vacío");
+        if (this.stock - amount < 0)
+            throw new StockException("No hay suficiente cantidad de medicina en el stock");
+        
+        // Reduce el stock de la medicina y calcula el precio total
+        this.stock -= amount;
+        Medicine aux = new Medicine(name, unitPrice * amount, stock);
+        return aux;
+    }
+    
+    // Método para obtener el stock disponible de la medicina
+    @Override
+    public int getStock() throws Exception {
+        return this.stock;
+    }
+    
+    // Método para imprimir los detalles de la medicina
+    public String print() throws Exception {
+        return this.name + "\nPrecio: " + this.unitPrice + "\nStock: " + this.stock;
+    }
 }
