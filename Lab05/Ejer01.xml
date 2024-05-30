@@ -1,16 +1,28 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE libro [
+<!DOCTYPE BOE [
+
 <!-- Aquí comienza el DTD -->
-<!ELEMENT libro (portada, cuerpo, contraportada)>
-<!ELEMENT portada (titulo, edicion, autor, editor)>
-<!ELEMENT titulo (#PCDATA)>
-<!ELEMENT edicion (#PCDATA)>
-<!ELEMENT autor (nombre, apellidos, email?)>
-<!ELEMENT nombre (#PCDATA)>
-<!ELEMENT apellidos (#PCDATA)>
-<!ELEMENT email (#PCDATA)>
-<!-- Aquí termina el DTD -->
+<!ELEMENT BOE (TITULO, FECHA, SUMARIO)>
+<!ELEMENT TITULO (#PCDATA)>
+<!ELEMENT FECHA (AAAA, MM, DD)>
+<!ELEMENT AAAA (#PCDATA)>
+<!ELEMENT MM (#PCDATA)>
+<!ELEMENT DD (#PCDATA)>
+<!ELEMENT SUMARIO (SECCION+)>
+<!ELEMENT SECCION (TIT-SECCION, APARTADO+)>
+<!ELEMENT TIT-SECCION (#PCDATA)>
+<!ELEMENT APARTADO (ORGANISMO, PARRAFO+)>
+<!ELEMENT ORGANISMO (#PCDATA)>
+<!ELEMENT PARRAFO (TEXTO, PAGINA+)>
+<!ELEMENT TEXTO (#PCDATA | LEY | RD | ORDEN | RES)*>
+<!ELEMENT LEY (#PCDATA)>
+<!ELEMENT RD (#PCDATA)>
+<!ELEMENT ORDEN (#PCDATA)>
+<!ELEMENT RES (#PCDATA)>
+<!ELEMENT PAGINA (#PCDATA)>
 ]>
+
+<!-- Aquí termina el DTD -->
 <BOE>
   <TITULO>BOLETIN OFICIAL DEL ESTADO</TITULO>
   <FECHA>
@@ -27,7 +39,8 @@
           <TEXTO>
             <LEY>Ley 1/2001 de 5 de marzo</LEY>, de la cesión gratuita
             a las Comunidades Autónomas el Impuesto sobre Animales y
-            Cosas establecido por el <RD>REAL DECRETO 13/1991</RD>.
+            Cosas establecido por el 
+            <RD>REAL DECRETO 13/1991</RD>.
           </TEXTO>
           <PAGINA>11290</PAGINA>
         </PARRAFO>
@@ -91,3 +104,4 @@
     </SECCION>
   </SUMARIO>
 </BOE>
+
