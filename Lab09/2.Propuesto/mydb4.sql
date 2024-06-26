@@ -4,19 +4,20 @@ CREATE DATABASE mydb4;
 -- Usar la base de datos
 USE mydb4;
 
-CREATE TABLE Productos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(50) NOT NULL,
-    cantidad INT NOT NULL,
-    precio DECIMAL(10, 2) NOT NULL
+CREATE TABLE productos (
+    id INT PRIMARY KEY,
+    nombre VARCHAR(100),
+    cantidad INT,
+    precio DECIMAL(10, 2)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE Ventas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    producto_id INT NOT NULL,
-    cantidad INT NOT NULL,
-    total DECIMAL(10, 2) NOT NULL,
-    FOREIGN KEY (producto_id) REFERENCES Productos(id)
+CREATE TABLE ventas (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    producto_id INT,
+    cantidad INT,
+    total DECIMAL(10, 2),
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (producto_id) REFERENCES productos(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
